@@ -1,18 +1,17 @@
 const hre = require("hardhat");
 
 async function main() {
-  const HealthMonitor = await hre.ethers.getContractFactory("HealthMonitor");
-  const healthMonitor = await HealthMonitor.deploy();
-  await healthMonitor.deployed();
-  console.log("HealthMonitor deployed to:", healthMonitor.address);
-
   const AnalysisHistory = await hre.ethers.getContractFactory("AnalysisHistory");
-  const analysisHistory = await AnalysisHistory.deploy();
-  await analysisHistory.deployed();
-  console.log("AnalysisHistory deployed to:", analysisHistory.address);
+  
+  const analysisHistory = await AnalysisHistory.deploy(); // Deploy the contract
+  await analysisHistory.waitForDeployment(); // Correct function for ethers v6+
+
+  console.log(`AnalysisHistory deployed at: ${analysisHistory.target}`);
 }
 
-main().catch((error) => {
-  console.error(error);
-  process.exitCode = 1;
-});
+main()
+  .then(() => process.exit(0))
+  .catch((err) => {
+    console.error(err);
+    process.exit(1);
+  });

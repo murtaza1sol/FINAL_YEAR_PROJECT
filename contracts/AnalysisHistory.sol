@@ -11,10 +11,11 @@ contract AnalysisHistory {
 
     mapping(address => Analysis[]) public userHistory;
 
+    event AnalysisAdded(address indexed user, string name, string residence, string result, uint256 timestamp);
+
     function addAnalysis(string memory name, string memory residence, string memory result) public {
-        userHistory[msg.sender].push(
-            Analysis(name, residence, result, block.timestamp)
-        );
+        userHistory[msg.sender].push(Analysis(name, residence, result, block.timestamp));
+        emit AnalysisAdded(msg.sender, name, residence, result, block.timestamp);
     }
 
     function getHistory(address user) public view returns (Analysis[] memory) {
