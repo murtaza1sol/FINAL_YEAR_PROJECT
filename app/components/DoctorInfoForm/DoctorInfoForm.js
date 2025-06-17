@@ -1,83 +1,75 @@
 "use client";
-
 import { useState } from "react";
 import { useRouter } from "next/navigation";
+import { ethers } from "ethers";
+import { CONTRACT_ADDRESS, ABI } from "@/constants/DecentralizedHealthSystem";
 
-export default function DoctorInfoForm({ walletAddress }) {
+export default function DoctorInfoForm({ walletAddress, onRegistered }) {
   const [name, setName] = useState("");
-  const [specialisation, setSpecialisation] = useState("");
+  const [specialization, setSpecialization] = useState("");
   const [hospitalLocation, setHospitalLocation] = useState("");
-  const [submitting, setSubmitting] = useState(false);
+  const [loading, setLoading] = useState(false);
   const router = useRouter();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setSubmitting(true);
+    if (!window.ethereum) return alert("MetaMask required");
 
+    setLoading(true);
     try {
-      const res = await fetch("/api/save-doctor", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          walletAddress,
-          name,
-          specialisation,
-          hospitalLocation,
-        }),
-      });
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const signer = await provider.getSigner();
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
 
-      if (res.ok) {
-        alert("Doctor info saved successfully!");
-        router.push(`/DoctorDashboardPage?wallet=${walletAddress}`);
-      } else {
-        const errorData = await res.json();
-        alert(`Error: ${errorData.error || "Something went wrong"}`);
-      }
-    } catch (error) {
-      console.error("Submission error:", error);
-      alert("Server error. Please try again.");
+      const tx = await contract.registerDoctor(name, specialization, hospitalLocation);
+      await tx.wait();
+
+      alert("Doctor registered on-chain!");
+      onRegistered?.();
+      router.push(`/DoctorDashboardPage?wallet=${walletAddress}`);
+    } catch (err) {
+      console.error(err);
+      alert(err.error?.message || err.message);
     } finally {
-      setSubmitting(false);
+      setLoading(false);
     }
   };
 
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="space-y-4 text-black max-w-md mx-auto"
-    >
+    <form onSubmit={handleSubmit} className="space-y-4 text-black">
       <input
         type="text"
-        placeholder="Your Name"
-        className="border p-2 rounded w-full"
+        placeholder="Name"
         value={name}
+        disabled={loading}
         onChange={(e) => setName(e.target.value)}
         required
+        className="border p-2 rounded w-full"
       />
       <input
         type="text"
-        placeholder="Specialisation"
-        className="border p-2 rounded w-full"
-        value={specialisation}
-        onChange={(e) => setSpecialisation(e.target.value)}
+        placeholder="Specialization"
+        value={specialization}
+        disabled={loading}
+        onChange={(e) => setSpecialization(e.target.value)}
         required
+        className="border p-2 rounded w-full"
       />
       <input
         type="text"
         placeholder="Hospital Location"
-        className="border p-2 rounded w-full"
         value={hospitalLocation}
+        disabled={loading}
         onChange={(e) => setHospitalLocation(e.target.value)}
         required
+        className="border p-2 rounded w-full"
       />
       <button
         type="submit"
-        disabled={submitting}
-        className={`${
-          submitting ? "bg-gray-400" : "bg-green-600"
-        } text-white px-4 py-2 rounded-xl w-full`}
+        disabled={loading}
+        className={`w-full px-4 py-2 rounded-xl text-white ${loading ? "bg-gray-400" : "bg-green-600"}`}
       >
-        {submitting ? "Saving..." : "Save Info"}
+        {loading ? "Registering..." : "Register as Doctor"}
       </button>
     </form>
   );

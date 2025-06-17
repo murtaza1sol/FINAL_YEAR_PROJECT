@@ -1,48 +1,45 @@
 "use client";
-import { ethers } from "ethers";
-import { CONTRACT_ADDRESS, ABI } from "@/constants/AnalysisHistory";
-
 import { useEffect, useState } from "react";
 import { useSearchParams } from "next/navigation";
+import { ethers } from "ethers";
+import { CONTRACT_ADDRESS, ABI } from "@/constants/DecentralizedHealthSystem";
 import SymptomsForm from "../components/SymptomsForm/SymptomsForm";
 
 export default function DashboardPage() {
   const [userInfo, setUserInfo] = useState(null);
   const [analysisHistory, setAnalysisHistory] = useState([]);
   const [loading, setLoading] = useState(true);
-
   const searchParams = useSearchParams();
   const walletAddress = searchParams.get("wallet");
 
   const fetchDashboardData = async () => {
-    if (!walletAddress) {
-      setLoading(false);
-      return;
-    }
+    if (!walletAddress || !window.ethereum) return;
 
     try {
-      // Fetch user info from backend
-      const resUser = await fetch(`/api/check-user?wallet=${walletAddress}`);
-      const userData = await resUser.json();
-      setUserInfo(userData.user || null);
+      const provider = new ethers.BrowserProvider(window.ethereum);
+      const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-      // Fetch on-chain history
-      if (window.ethereum) {
-        const provider = new ethers.BrowserProvider(window.ethereum);
-        const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
-
-        const data = await contract.getHistory(walletAddress);
-        const parsed = data.map((entry) => ({
-          name: entry.name,
-          residence: entry.residence,
-          result: entry.result,
-          timestamp: Number(entry.timestamp) * 1000,
-        }));
-
-        setAnalysisHistory(parsed.reverse());
+      const data = await contract.getHistory(walletAddress);
+      if (!data || !data) {
+        setUserInfo(null);
+      } else {
+        setUserInfo({
+          name: data[0][0],
+          residence: data[0][1],
+        });
       }
-    } catch (error) {
-      console.error("Error loading dashboard:", error);
+
+      const history = await contract.getHistory(walletAddress);
+      const parsed = history.map((entry) => ({
+        name: entry.name,
+        residence: entry.residence,
+        result: entry.result,
+        timestamp: Number(entry.timestamp) * 1000,
+      }));
+
+      setAnalysisHistory(parsed.reverse());
+    } catch (err) {
+      console.error("Error loading dashboard:", err);
     } finally {
       setLoading(false);
     }
@@ -55,10 +52,8 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-screen bg-gradient-to-br from-blue-50 to-white">
-        <div className="flex flex-col items-center space-y-4">
-          <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
-          <p className="text-blue-600 text-sm font-medium">Loading dashboard...</p>
-        </div>
+        <div className="w-12 h-12 border-4 border-blue-400 border-t-transparent rounded-full animate-spin"></div>
+        <p className="text-blue-600 text-sm font-medium mt-2">Loading dashboard...</p>
       </div>
     );
   }
@@ -94,9 +89,9 @@ export default function DashboardPage() {
             <div className="bg-white rounded-lg shadow-md p-6 border border-blue-100">
               <h2 className="text-xl font-semibold text-blue-700 mb-4">📊 Previous Analysis</h2>
               {analysisHistory.length > 0 ? (
-                <ul className="list-disc pl-6 space-y-3 text-gray-700 ">
+                <ul className="list-disc pl-6 space-y-3 text-gray-700">
                   {analysisHistory.map((entry, idx) => (
-                    <li key={idx} className="border-b-2 p-2">
+                    <li key={idx} className="border-b pb-2">
                       <p><strong>Date:</strong> {new Date(entry.timestamp).toLocaleString()}</p>
                       <p><strong>Name:</strong> {entry.name}</p>
                       <p><strong>Residence:</strong> {entry.residence}</p>
@@ -111,7 +106,7 @@ export default function DashboardPage() {
           </>
         ) : (
           <p className="text-center text-red-600 font-medium">
-            User data not found. Please connect your wallet again.
+            User data not found on-chain. Please register first.
           </p>
         )}
       </div>

@@ -1,10 +1,10 @@
 {
   "_format": "hh-sol-cache-2",
   "files": {
-    "/home/murtaza/Project/final_year_project/contracts/AnalysisHistory.sol": {
-      "lastModificationDate": 1748798100617,
-      "contentHash": "937115d60fbb7cc9901cd2ef75ba0344",
-      "sourceName": "contracts/AnalysisHistory.sol",
+    "/home/murtaza/Project/final_year_project/contracts/DecentralizedHealthSystem.sol": {
+      "lastModificationDate": 1750085513711,
+      "contentHash": "d6ae0710c5cd01f714ae1a2be7efc008",
+      "sourceName": "contracts/DecentralizedHealthSystem.sol",
       "solcConfig": {
         "version": "0.8.20",
         "settings": {
@@ -34,7 +34,7 @@
         "^0.8.0"
       ],
       "artifacts": [
-        "AnalysisHistory"
+        "DecentralizedHealthSystem"
       ]
     }
   }

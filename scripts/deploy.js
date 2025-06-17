@@ -1,12 +1,12 @@
 const hre = require("hardhat");
 
 async function main() {
-  const AnalysisHistory = await hre.ethers.getContractFactory("AnalysisHistory");
+  const DecentralizedHealthSystem = await hre.ethers.getContractFactory("DecentralizedHealthSystem");
   
-  const analysisHistory = await AnalysisHistory.deploy(); // Deploy the contract
-  await analysisHistory.waitForDeployment(); // Correct function for ethers v6+
+  const decentralizedHealthSystem = await DecentralizedHealthSystem.deploy(); // Deploy the contract
+  await decentralizedHealthSystem.waitForDeployment(); // Correct function for ethers v6+
 
-  console.log(`AnalysisHistory deployed at: ${analysisHistory.target}`);
+  console.log(`DecentralizedHealthSystem deployed at: ${decentralizedHealthSystem.target}`);
 }
 
 main()

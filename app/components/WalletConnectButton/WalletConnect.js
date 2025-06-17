@@ -1,70 +1,63 @@
 "use client";
 
-import UserInfoForm from "../UserInfoForm/UserInfoForm";
-import DoctorInfoForm from "../DoctorInfoForm/DoctorInfoForm";
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import { ethers } from "ethers";
+import { CONTRACT_ADDRESS, ABI } from "@/constants/DecentralizedHealthSystem";
+import DoctorInfoForm from "../DoctorInfoForm/DoctorInfoForm";
+import UserInfoForm from "../UserInfoForm/UserInfoForm";
 
 export default function WalletConnectButton() {
   const [walletAddress, setWalletAddress] = useState("");
-  const [isNewUser, setIsNewUser] = useState(null); // null: undecided, true: new, false: existing
-  const [userRole, setUserRole] = useState(""); // 'patient' or 'doctor'
+  const [isNewUser, setIsNewUser] = useState(null); // true | false | null
+  const [userRole, setUserRole] = useState(""); // "doctor" | "patient"
   const router = useRouter();
 
-  const checkUserExists = async (walletAddress) => {
-    const res = await fetch(`/api/check-user?wallet=${walletAddress}`);
-    const data = await res.json();
-    return data.exists;
-  };
-
-  const checkDoctorExists = async (walletAddress) => {
-    const res = await fetch(`/api/check-doctor?wallet=${walletAddress}`);
-    const data = await res.json();
-    return data.exists;
-  };
-
   const connectWallet = async (role) => {
-    if (!window.ethereum) {
-      alert("Please install MetaMask");
-      return;
-    }
+    if (!window.ethereum) return alert("Please install MetaMask");
 
     const provider = new ethers.BrowserProvider(window.ethereum);
-    const accounts = await provider.send("eth_requestAccounts", []);
-    const address = accounts[0];
+    const signer = await provider.getSigner();
+    const address = await signer.getAddress();
     setWalletAddress(address);
     setUserRole(role);
 
-    let exists;
-    if (role === "patient") {
-      exists = await checkUserExists(address);
-    } else if (role === "doctor") {
-      exists = await checkDoctorExists(address);
-    }
+    const contract = new ethers.Contract(CONTRACT_ADDRESS, ABI, provider);
 
-    setIsNewUser(!exists);
+    if (role === "doctor") {
+      const doctors = await contract.getAllDoctors();
+      const exists = doctors.some((d) => d.wallet.toLowerCase() === address.toLowerCase());
+      setIsNewUser(!exists);
+    } else {
+      const contractWithSigner = new ethers.Contract(CONTRACT_ADDRESS, ABI, signer);
+      const history = await contractWithSigner.getHistory(address);
+      setIsNewUser(history.length === 0); // No history means new patient
+    }
   };
 
   useEffect(() => {
-    if (walletAddress && userRole === "patient" && isNewUser === false) {
-      router.push(`/dashboard?wallet=${walletAddress}`);
-    } else if (walletAddress && userRole === "doctor" && isNewUser === false) {
-      router.push(`/DoctorDashboardPage?wallet=${walletAddress}`);
+    if (!walletAddress || isNewUser === null) return;
+
+    if (!isNewUser) {
+      if (userRole === "doctor") {
+        router.push(`/DoctorDashboardPage?wallet=${walletAddress}`);
+      } else if (userRole === "patient") {
+        router.push(`/dashboard?wallet=${walletAddress}`);
+      }
     }
-  }, [walletAddress, isNewUser]);
+  }, [walletAddress, isNewUser, userRole, router]);
 
   return (
     <div className="p-4">
       <button
         onClick={() => connectWallet("patient")}
-        className="bg-blue-600 text-white px-4 py-2 rounded-xl m-4"
+        className="bg-blue-600 text-white px-4 py-2 rounded-xl m-2"
       >
         Connect as Patient
       </button>
       <button
         onClick={() => connectWallet("doctor")}
-        className="bg-blue-600 text-white px-4 py-2 rounded-xl m-4"
+        className="bg-green-600 text-white px-4 py-2 rounded-xl m-2"
       >
         Connect as Doctor
       </button>
@@ -75,19 +68,15 @@ export default function WalletConnectButton() {
 
       {isNewUser && userRole === "patient" && (
         <div className="mt-4">
-          <p className="mb-2 text-gray-700">
-            Please enter your patient details:
-          </p>
+          <p className="mb-2">Please enter your details:</p>
           <UserInfoForm walletAddress={walletAddress} />
         </div>
       )}
 
       {isNewUser && userRole === "doctor" && (
         <div className="mt-4">
-          <p className="mb-2 text-gray-700">
-            Please enter your doctor details:
-          </p>
-          <DoctorInfoForm walletAddress={walletAddress} />
+          <p className="mb-2">Please enter your doctor details:</p>
+          <DoctorInfoForm walletAddress={walletAddress} onRegistered={() => setIsNewUser(false)} />
         </div>
       )}
     </div>
