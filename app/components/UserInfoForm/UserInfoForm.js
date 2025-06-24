@@ -23,7 +23,7 @@ export default function UserInfoForm({ walletAddress }) {
       const tx = await contract.addAnalysis(name, residence,"(Login Time)");
       await tx.wait();
 
-      alert("Registered and linked to doctor!");
+      alert("Registered Successfully!");
       router.push(`/dashboard?wallet=${walletAddress}`);
     } catch (err) {
       console.error(err);
@@ -34,6 +34,7 @@ export default function UserInfoForm({ walletAddress }) {
   };
 
   return (
+    
     <form onSubmit={handleSubmit} className="space-y-4 text-black">
       <input
         type="text"

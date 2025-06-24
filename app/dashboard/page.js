@@ -24,8 +24,8 @@ export default function DashboardPage() {
         setUserInfo(null);
       } else {
         setUserInfo({
-          name: data[0][0],
-          residence: data[0][1],
+          name: data[0][1],
+          residence: data[0][2],
         });
       }
 
@@ -35,6 +35,7 @@ export default function DashboardPage() {
         residence: entry.residence,
         result: entry.result,
         timestamp: Number(entry.timestamp) * 1000,
+        patientWallet : entry.patientWallet
       }));
 
       setAnalysisHistory(parsed.reverse());
@@ -96,6 +97,7 @@ export default function DashboardPage() {
                       <p><strong>Name:</strong> {entry.name}</p>
                       <p><strong>Residence:</strong> {entry.residence}</p>
                       <p><strong>Result:</strong> {entry.result}</p>
+                      <p><strong>wallet Address:</strong> {entry.patientWallet}</p>
                     </li>
                   ))}
                 </ul>

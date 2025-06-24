@@ -10,12 +10,14 @@ contract DecentralizedHealthSystem {
     }
 
     struct Patient {
+        address wallet;
         string name;
         string residence;
         uint256 timestamp;
     }
 
     struct Analysis {
+        address patientWallet;
         string name;
         string residence;
         string result; // "Positive" or "Negative"
@@ -28,13 +30,41 @@ contract DecentralizedHealthSystem {
     mapping(address => Patient[]) public doctorToPatients;
     mapping(address => Analysis[]) public userHistory;
 
-    event DoctorRegistered(address indexed wallet, string name, string specialization, string location);
-    event PatientAdded(address indexed doctor, string name, string residence, uint256 timestamp);
-    event PatientDeleted(address indexed doctor, uint256 index);
-    event AnalysisAdded(address indexed user, string name, string residence, string result, uint256 timestamp);
+    event DoctorRegistered(
+        address indexed wallet,
+        string name,
+        string specialization,
+        string location
+    );
 
-    function registerDoctor(string memory _name, string memory _specialization, string memory _hospitalLocation) external {
-        require(bytes(doctors[msg.sender].name).length == 0, "Doctor already registered");
+    event PatientAdded(
+        address indexed doctor,
+        address indexed wallet,
+        string name,
+        string residence,
+        uint256 timestamp
+    );
+
+    event PatientDeleted(address indexed doctor, uint256 index);
+
+    event AnalysisAdded(
+        address indexed doctorOrPatient,
+        address indexed patientWallet,
+        string name,
+        string residence,
+        string result,
+        uint256 timestamp
+    );
+
+    function registerDoctor(
+        string memory _name,
+        string memory _specialization,
+        string memory _hospitalLocation
+    ) external {
+        require(
+            bytes(doctors[msg.sender].name).length == 0,
+            "Doctor already registered"
+        );
 
         Doctor memory newDoctor = Doctor({
             name: _name,
@@ -57,25 +87,16 @@ contract DecentralizedHealthSystem {
         return allDoctors;
     }
 
-    function addPatient(string memory _name, string memory _residence) external {
-        address matchingDoctor = address(0);
+    function addPatient(string memory _name, string memory _residence, address doctorAddress) external {
 
-        for (uint i = 0; i < doctorList.length; i++) {
-            if (keccak256(abi.encodePacked(doctors[doctorList[i]].hospitalLocation)) == keccak256(abi.encodePacked(_residence))) {
-                matchingDoctor = doctorList[i];
-                break;
-            }
-        }
-
-        require(matchingDoctor != address(0), "No doctor found in this location");
-
-        doctorToPatients[matchingDoctor].push(Patient({
+        doctorToPatients[doctorAddress].push(Patient({
+            wallet: msg.sender,
             name: _name,
             residence: _residence,
             timestamp: block.timestamp
         }));
 
-        emit PatientAdded(matchingDoctor, _name, _residence, block.timestamp);
+        emit PatientAdded(doctorAddress, msg.sender, _name, _residence, block.timestamp);
     }
 
     function getPatientsByDoctor(address _doctor) public view returns (Patient[] memory) {
@@ -96,20 +117,17 @@ contract DecentralizedHealthSystem {
 
     function addAnalysis(string memory _name, string memory _residence, string memory _result) public {
         userHistory[msg.sender].push(Analysis({
+            patientWallet: msg.sender,
             name: _name,
             residence: _residence,
             result: _result,
             timestamp: block.timestamp
         }));
 
-        emit AnalysisAdded(msg.sender, _name, _residence, _result, block.timestamp);
+        emit AnalysisAdded(msg.sender, msg.sender, _name, _residence, _result, block.timestamp);
     }
 
     function getHistory(address _user) public view returns (Analysis[] memory) {
         return userHistory[_user];
-    }
-
-    function isDoctor(address _addr) public view returns (bool) {
-        return bytes(doctors[_addr].name).length > 0;
     }
 }

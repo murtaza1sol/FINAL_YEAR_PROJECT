@@ -28,9 +28,10 @@ export default function DoctorDashboardPage() {
       const patientEntries = await contract.getPatientsByDoctor(walletAddress);
       setPatients(patientEntries.map((p, idx) => ({
         index: idx,
+        wallet: p.wallet,
         name: p.name,
         residence: p.residence,
-        timestamp: Number(p.timestamp) * 1000
+        timestamp: Number(p.timestamp) * 1000,
       })).reverse());
     } catch (err) {
       console.error("Error fetching doctor dashboard:", err);
@@ -104,12 +105,13 @@ export default function DoctorDashboardPage() {
                       <p><strong>Residence:</strong> {p.residence}</p>
                       <p><strong>Result:</strong> Positive for Monkeypox</p>
                       <p><strong>Timestamp:</strong> {new Date(p.timestamp).toLocaleString()}</p>
+                      <p><strong>Wallet Address:</strong> {p.wallet}</p>
 
                       <button
                         onClick={() => deletePatient(p.index)}
-                        className="mt-2 bg-red-500 hover:bg-red-600 text-white text-sm px-4 py-1 rounded"
+                        className="mt-2 bg-green-500 hover:bg-green-600 text-white text-sm px-4 py-1 rounded"
                       >
-                        🗑 Delete Entry
+                        Treated
                       </button>
                     </li>
                   ))}

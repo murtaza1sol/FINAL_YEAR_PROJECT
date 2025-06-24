@@ -26,6 +26,5 @@
     "ethers": "^6.14.3",
     "hardhat": "^2.24.1",
     "tailwindcss": "^4"
-  },
-  "type":"module"
+  }
 }
